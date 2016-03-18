@@ -12,9 +12,24 @@ import json
 ''' we obtain no more than MAXITEM papers in a single query '''
 MAXITEM = 1000
 
-sourcetype = 'conference'
-venues = ['facs', 'fm']
+# NOTE: it seems that there'are some problems in the conferences
+# - KDD is an abbrivation of SIGKDD, the later one cannot be found in DBLP
+# - KDD Explorations ?
+
+conferences = [
+    'sdm', 'icdm', 'ecml-pkdd', 'pakdd', 'wsdm',
+    'dmkd', 'kdd', 'cvpr', 'icml', 'nips', 'colt', 'sigir',
+]
+
+journals = [
+    "sigkdd_explorations_sigkdd_",    # SIGKDD explorations
+    "tkdd", 
+    "ieee_trans_knowl_data_eng_tkde_" # TKDE
+    ]
+
+venues = conferences + journals
 apiaddr = 'http://dblp.org/search/api/?q='
+# apiaddr = 'http://dblp.uni-trier.de/search/publ/api?q='
 
 ''' where to store the data? '''
 dbaddr = os.path.dirname(os.path.dirname(__file__))
@@ -43,30 +58,45 @@ CREATE TABLE dblp (
     title varchar(255),
     authors varchar(255),
     venue varchar(255),
+    type varchar(255),
     year int(20)
 )
 ''')
 
+''' how many items we've found '''
+amount = 0
+
 for venue in venues:
+    sourcetype = 'conference' if venue in conferences else 'journal'
     url = apiaddr + 'ce:type:%s:* ce:venue:%s:*&h=%d&c=4&f=0&format=json' \
         % (sourcetype, venue, MAXITEM)
     print 'Searching for papers in %s <%s> ...' % (sourcetype, venue),
     sys.stdout.flush()
-    query = urllib.urlopen(url).read()
+    while True:
+        try:
+            query = urllib.urlopen(url).read()
+            break
+        except:
+            ''' retry when network failed '''
     jsonresult = json.loads(query)
     hits = jsonresult["result"]["hits"]
     print hits["@total"], "items found."
+    amount += int(hits["@total"])
+
+    if int(hits["@total"]) == 0:
+        print 'FAILED at <%s> plz check if you\'re using the correct venue name -_-' % venue
+        continue
 
     # appending paper items to the database
     for hit in hits["hit"]:
         title = hit['info']['title']['text']
         year = hit['info']['year']
         dbcursor.execute('''
-            INSERT INTO dblp (title, venue, year) VALUES
-            ('%s', '%s', %s)
-            ''' % (title, venue, year)
+            INSERT INTO dblp (title, venue, year, type) VALUES
+            ('%s', '%s', %s, '%s')
+            ''' % (title, venue, year, sourcetype)
         )
 
 dbconn.commit()
 dbconn.close()
-print 'data grabbing finished.'
+print 'data grabbing finished with %d items.' % amount
