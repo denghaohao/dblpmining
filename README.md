@@ -9,4 +9,9 @@ homework of datamining
 
 # Timeline
 - *Mar 17th, 2016* start!
+- *Mar 18th, 2016* bug fixed when crawling journal papers
+- *Mar 19th, 2016* fp-tree's constructing algorithm finished
 
+# TODO
+- fp-growth algorithm
+- how to optimize the fp-growth algorithm?

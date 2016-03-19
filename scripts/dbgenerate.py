@@ -3,11 +3,11 @@ this script is used to obtain xml data from dblp.org and save it to
 a local database
 '''
 
-import urllib
-import sys
+import json
 import os
 import sqlite3
-import json
+import sys
+import urllib
 
 ''' we obtain no more than MAXITEM papers in a single query '''
 MAXITEM = 1000
@@ -32,7 +32,10 @@ apiaddr = 'http://dblp.org/search/api/?q='
 # apiaddr = 'http://dblp.uni-trier.de/search/publ/api?q='
 
 ''' where to store the data? '''
-dbaddr = os.path.dirname(os.path.dirname(__file__))
+currpath = os.path.abspath(__file__)
+
+''' locate the parent folder '''
+dbaddr = os.path.dirname(os.path.dirname(currpath))
 dbaddr = (dbaddr + '/') if dbaddr != '' else './'
 dbaddr += 'dataset/'
 
@@ -43,7 +46,14 @@ else:
     dbaddr += 'default.sqlite'
 
 ''' start database connection '''
-dbconn = sqlite3.connect(dbaddr)
+dbconn = None
+try:
+    dbconn = sqlite3.connect(dbaddr)
+except:
+    # failed to open the database
+    print 'failed to connect database', dbaddr
+    exit(1)
+
 dbcursor = dbconn.cursor()
 print 'data will be stored in', dbaddr
 
@@ -56,7 +66,7 @@ except:
 dbcursor.execute('''
 CREATE TABLE dblp (
     title varchar(255),
-    authors varchar(255),
+    author varchar(255),
     venue varchar(255),
     type varchar(255),
     year int(20)
@@ -72,6 +82,7 @@ for venue in venues:
         % (sourcetype, venue, MAXITEM)
     print 'Searching for papers in %s <%s> ...' % (sourcetype, venue),
     sys.stdout.flush()
+    query = None
     while True:
         try:
             query = urllib.urlopen(url).read()
@@ -91,10 +102,18 @@ for venue in venues:
     for hit in hits["hit"]:
         title = hit['info']['title']['text']
         year = hit['info']['year']
+        try:
+            # some items may include no information about authors
+            author = ''
+            for name in hit['info']['authors']['author']:
+                author += name + ","
+        except:
+            # if an item contains no authors, we would ignore it
+            continue
         dbcursor.execute('''
-            INSERT INTO dblp (title, venue, year, type) VALUES
-            ('%s', '%s', %s, '%s')
-            ''' % (title, venue, year, sourcetype)
+            INSERT INTO dblp (title, author, venue, year, type) VALUES
+            ('%s', '%s', '%s', %s, '%s')
+            ''' % (title, author, venue, year, sourcetype)
         )
 
 dbconn.commit()
