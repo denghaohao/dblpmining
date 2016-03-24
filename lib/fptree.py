@@ -27,32 +27,38 @@ def supfilter(dataset, minsup):
     dataset = filter(lambda item: len(item) > 0, dataset)
 
     # sort by the support of items
-    def termcmp(a, b):
-        if rec[a] < rec[b]:
-            return 1
-        elif rec[a] > rec[b]:
-            return -1
-        else:
-            return 0
-
-    dataset = map(lambda item: sorted(item, cmp=termcmp), dataset)
-
+    dataset = map(
+        lambda item: sorted(
+            item,
+            # we use support of elements as sorting keys
+            key=lambda ele: rec[ele],
+            reverse=True
+        ),
+        dataset
+    )
     return dataset
 
 
-class node:
-    def __init__(self, name=None):
+class Node:
+    def __init__(self, name=None, parent=None, headertable=None):
         self.name = name
         self.sup = 0
         self.children = {}
+        self.parent = parent
+        if headertable is not None:
+            # the node will be appended to the header table if such
+            # such a table is provided
+            if name not in headertable:
+                headertable[name] = []
+            headertable[name].append(self)
 
-    def appenditem(self, item):
+    def appenditem(self, item, headertable):
         self.sup += 1
         if len(item) == 0:
             return
         if item[0] not in self.children:
-            self.children[item[0]] = node(item[0])
-        self.children[item[0]].appenditem(item[1:])
+            self.children[item[0]] = Node(item[0], self, headertable)
+        self.children[item[0]].appenditem(item[1:], headertable)
 
 
 class fptree:
@@ -69,7 +75,9 @@ class fptree:
         self.minsup = minsup
         items = supfilter(dataset, minsup)
 
-        # create fp-tree
-        root = node()
+        """ the root node of a fp-tree """
+        self.root = Node()
+        """ header table """
+        self.headertable = {}
         for item in items:
-            root.appenditem(item)
+            self.root.appenditem(item, self.headertable)

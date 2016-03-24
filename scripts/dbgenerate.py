@@ -12,10 +12,6 @@ import urllib
 ''' we obtain no more than MAXITEM papers in a single query '''
 MAXITEM = 1000
 
-# NOTE: it seems that there'are some problems in the conferences
-# - KDD is an abbrivation of SIGKDD, the later one cannot be found in DBLP
-# - KDD Explorations ?
-
 conferences = [
     'sdm', 'icdm', 'ecml-pkdd', 'pakdd', 'wsdm',
     'dmkd', 'kdd', 'cvpr', 'icml', 'nips', 'colt', 'sigir',
