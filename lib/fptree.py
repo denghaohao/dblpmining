@@ -3,7 +3,11 @@ an algorithm to build a fp-tree from existing datasets """
 
 
 def supfilter(dataset, minsup):
-    """ supfilter : scan the items and drop the infrequent elements
+    """
+    supfilter : scan the items and drop the infrequent elements
+    :param dataset: dataset could be in two available types: list(data) and list((data, support))
+    :param minsup:
+    :return:
     """
     rec = {}
     for item in dataset:
@@ -15,21 +19,21 @@ def supfilter(dataset, minsup):
 
     # filter: find the infrequent keywords
     del rec['']
-    inf = filter(lambda item: item[1] >= minsup, rec.items())
-    inf = map(lambda item: item[0], inf)
+    inf = filter(lambda i: i[1] >= minsup, rec.items())
+    inf = map(lambda i: i[0], inf)
 
     # remove the infrequent elements from the dataset
     dataset = map(
-        lambda item: filter(lambda ele: ele in inf, item),
+        lambda i: filter(lambda ele: ele in inf, i),
         dataset
     )
     # remove the empty items
-    dataset = filter(lambda item: len(item) > 0, dataset)
+    dataset = filter(lambda i: len(i) > 0, dataset)
 
     # sort by the support of items
     dataset = map(
-        lambda item: sorted(
-            item,
+        lambda i: sorted(
+            i,
             # we use support of elements as sorting keys
             key=lambda ele: rec[ele],
             reverse=True
@@ -69,7 +73,10 @@ class fptree:
             ['banana'],
             ....
         ]
-        data items can be any strings """
+        data items can be any strings
+        NOTE: once a fptree is created, it should never be modified
+        (at least in this scenario)
+        """
 
         # minimum support
         self.minsup = minsup
@@ -81,3 +88,11 @@ class fptree:
         self.headertable = {}
         for item in items:
             self.root.appenditem(item, self.headertable)
+
+        # check if the tree contains only a single prefix
+        self.issingle = False
+        pt = self.root
+        while len(pt.children) <= 1:
+            if len(pt.children) == 0:
+                self.issingle = True
+            pt = pt.children.values()[0]
