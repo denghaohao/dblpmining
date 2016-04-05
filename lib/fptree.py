@@ -1,6 +1,7 @@
 """ in this file, we describe the data type of fp-tree nodes and present
 an algorithm to build a fp-tree from existing datasets """
-
+import fpgrowth
+import Queue
 
 def supfilter(dataset, minsup):
     """
@@ -18,7 +19,8 @@ def supfilter(dataset, minsup):
             rec[elem] += 1
 
     # filter: find the infrequent keywords
-    del rec['']
+    if '' in rec:
+        del rec['']
     inf = filter(lambda i: i[1] >= minsup, rec.items())
     inf = map(lambda i: i[0], inf)
 
@@ -90,9 +92,23 @@ class fptree:
             self.root.appenditem(item, self.headertable)
 
         # check if the tree contains only a single prefix
-        self.issingle = False
-        pt = self.root
-        while len(pt.children) <= 1:
-            if len(pt.children) == 0:
-                self.issingle = True
-            pt = pt.children.values()[0]
+        # todo
+
+    def growth(self):
+        """
+        important!! this function is not thread-safe, so never try to execute it
+        parallelly
+        :return:
+        """
+        # initialize the queue
+        fpgrowth.patterns = Queue.Queue()
+        fpgrowth.fpgrowth(self, [], self.minsup)
+        fpgrowth.wait()
+
+        result = []
+        while not fpgrowth.patterns.empty():
+            patt = fpgrowth.patterns.get()
+            if len(patt) > 1:
+                result.append(patt)
+
+        return result

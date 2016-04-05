@@ -1,6 +1,16 @@
 """ the fp-growth algorithm should be written in this file
 """
+from threading import Thread
+
 import fptree as fpt
+import Queue
+
+patterns = Queue.Queue()
+threads = Queue.Queue()
+
+
+def push_pattern(patt):
+    patterns.put(patt)
 
 
 def cpb(treenode):
@@ -12,7 +22,8 @@ def cpb(treenode):
         result.append(treenode.name)
         treenode = treenode.parent
 
-    return list(reversed(result)), sup
+    # remove the last element (name of current treenode)
+    return list(reversed(result))[:-1], sup
 
 
 def fpgrowth(tree, a, minsup):
@@ -21,7 +32,10 @@ def fpgrowth(tree, a, minsup):
     assert (
         isinstance(tree, fpt.fptree) and isinstance(a, list)
     )
+
     for key in tree.headertable:
+        push_pattern([key] + a)
+
         # construct a conditional fp-tree
         cpbs = []
         for node in tree.headertable[key]:
@@ -29,15 +43,27 @@ def fpgrowth(tree, a, minsup):
 
         # remove the items with low frequency
         cpbs = filter(lambda item: item[1] > minsup, cpbs)
-        if len(cpbs) == 0:
-            # we will not apply any further operations on an empty list
-            continue
 
         # expand the cpbs to a dataset which is accepted by the fptree algorithm
+        # note that in each iteration, we decrease the length of samples
+        # e.g. a,b,c -> a,b -> a
         dset = []
         for rec in cpbs:
-            dset += [rec[0]] * rec[1]
+            if len(rec[0]) > 1:
+                dset += [rec[0]] * rec[1]
 
-        # construct the new conditional fp-tree
-        newfpt = fpt.fptree(dset, minsup)
-        break
+        if len(dset) != 0:
+            # construct the new conditional fp-tree
+            newfpt = fpt.fptree(dset, minsup)
+            thr = Thread(
+                target=fpgrowth,
+                args=(newfpt, [key] + a, minsup)
+            )
+            threads.put(thr)
+            thr.start()
+
+
+def wait():
+    while not threads.empty():
+        thr = threads.get()
+        thr.join()
