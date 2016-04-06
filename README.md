@@ -10,6 +10,7 @@ homework of datamining
   - `conn.py` an encapsulated module, used to apply query on textual databases
   - `fptree.py` describes how to construct a fp-tree
   - `fpgrowth.py` fp-growth algorithm
+- `test` several trivial testing scripts
 - `hw1.py` the main file of the first homework
 
 # Timeline

@@ -1,7 +1,7 @@
-'''
+"""
 this script is used to obtain xml data from dblp.org and save it to
 a local database
-'''
+"""
 
 import json
 import os
@@ -10,7 +10,7 @@ import sys
 import urllib
 
 ''' we obtain no more than MAXITEM papers in a single query '''
-MAXITEM = 1000
+MAXITEM = 10000
 
 conferences = [
     'sdm', 'icdm', 'ecml-pkdd', 'pakdd', 'wsdm',

@@ -1,14 +1,21 @@
 from lib.conn import query
 from lib.fptree import *
+from lib.analysis import *
 
-dataset = query('default', 'select author from dblp')
+dbname = 'default'
 
-# we only consider the authors
+dataset = query(dbname, 'select author, year from dblp')
+
+# we only consider the authors in the database
 dataset = map(lambda item: item[0].split(','), list(dataset))
 
-# print len(filter(lambda rec: 'Jiawei Han' in rec and 'Jialu Liu' in rec, dataset))
 
-minsup = 6
+minsup = 3
 
+# constructing fp-tree
 tree = fptree(dataset, minsup)
-print tree.growth()
+# generating frequent item set
+terms = tree.growth()
+
+# print teacher_student_analyse(terms)
+print cooperate_relation(terms)

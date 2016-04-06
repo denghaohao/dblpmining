@@ -34,15 +34,17 @@ def fpgrowth(tree, a, minsup):
     )
 
     for key in tree.headertable:
-        push_pattern([key] + a)
-
         # construct a conditional fp-tree
         cpbs = []
+        sup = 0
         for node in tree.headertable[key]:
-             cpbs.append(cpb(node))
+            cpbs.append(cpb(node))
+            sup += node.sup
+
+        push_pattern(([key] + a, sup))
 
         # remove the items with low frequency
-        cpbs = filter(lambda item: item[1] > minsup, cpbs)
+        cpbs = filter(lambda item: item[1] >= minsup, cpbs)
 
         # expand the cpbs to a dataset which is accepted by the fptree algorithm
         # note that in each iteration, we decrease the length of samples

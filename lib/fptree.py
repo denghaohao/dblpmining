@@ -108,7 +108,6 @@ class fptree:
         result = []
         while not fpgrowth.patterns.empty():
             patt = fpgrowth.patterns.get()
-            if len(patt) > 1:
-                result.append(patt)
+            result.append(patt)
 
         return result
