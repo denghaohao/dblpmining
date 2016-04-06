@@ -2,17 +2,40 @@ from lib.conn import query
 
 dbname = 'default'
 year_threshold = 8
-
-# obtain author information from the database
-raw_authors = query(dbname, 'select * from authors')
 authors = {}
-for rec in raw_authors:
-    authors[rec[0]] = rec[1:]
+
+
+def obtain_papers(names, distinct=True):
+    whereclause = ''
+    for name in names:
+        whereclause += " author like '%%%s%%' and" % name
+    return query(
+        # %% is an escape character for %
+        dbname,
+        'select %s year from dblp where %s 1' % ('distinct' if distinct else '', whereclause)
+    )
 
 
 def set_db(name):
     global dbname
     dbname = name
+    # obtain author information from the database
+    raw_authors = query(dbname, 'select * from authors')
+    global authors
+    authors = {}
+    for rec in raw_authors:
+        authors[rec[0]] = rec[1:]
+
+
+def cooperate_relation(itemset):
+    raw_edges = filter(lambda item: len(item[0]) == 2, itemset)
+    for edge in raw_edges:
+        # evaluation for each edge (frequent item)
+        copapers = obtain_papers([edge[0][0], edge[0][1]], distinct=False)
+        edge[1] = (float(len(copapers)) / authors[edge[0][0]][1]) * \
+                  (float(len(copapers)) / authors[edge[0][1]][1]) * len(copapers)
+
+    return raw_edges
 
 
 def teacher_student_analyse(itemset):
@@ -36,13 +59,7 @@ def teacher_student_analyse(itemset):
     # now we're going to check when the student is supervised by his supervisor
     relation = []
     for rel in raw_relation:
-        copapers = query(
-            dbname,
-            'select distinct year from dblp where \
-                author like "%%%s%%%s%%" or \
-                author like "%%%s%%%s%%" order by year' %
-            (rel[0], rel[1], rel[1], rel[0])
-        )
+        copapers = obtain_papers([rel[0], rel[1]])
         relation.append((rel[0], rel[1], copapers[0][0], copapers[-1][0]))
 
     group_relation = {}
@@ -61,18 +78,7 @@ def teacher_student_analyse(itemset):
     return group_relation
 
 
-def cooperate_relation(itemset):
-    itemset = filter(lambda item: len(item[0]) >= 2, itemset)
+def group_cooperate_relation(itemset):
+    itemset = filter(lambda item: len(item[0]) >= 3 and item[1] >= 0, itemset)
 
-    nodes = []
-    for item in itemset:
-        nodes += item[0]
-
-    nodes = list(set(nodes))
-    edges = [[0] * len(nodes)] * len(nodes)
-
-    # construct the graph
-    for rel in itemset:
-        print rel
-        break
-    pass
+    print itemset

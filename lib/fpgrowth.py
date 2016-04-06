@@ -41,7 +41,7 @@ def fpgrowth(tree, a, minsup):
             cpbs.append(cpb(node))
             sup += node.sup
 
-        push_pattern(([key] + a, sup))
+        push_pattern([[key] + a, sup])
 
         # remove the items with low frequency
         cpbs = filter(lambda item: item[1] >= minsup, cpbs)

@@ -1,3 +1,4 @@
 from lib.conn import query
+from lib.analysis import obtain_papers
 
-print query('default', 'select author, year from dblp where author like "%Jiawei Han%"')
+print obtain_papers([u'Xilin Chen', u'Ruiping Wang', u'Zhiwu Huang'], distinct=False)
