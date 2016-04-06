@@ -18,7 +18,7 @@ conferences = [
 ]
 
 journals = [
-    "pattern_recognition_pr_"
+    "pattern_recognition_pr_",
     "sigkdd_explorations_sigkdd_",    # SIGKDD explorations
     "tkdd", 
     "ieee_trans_knowl_data_eng_tkde_" # TKDE
