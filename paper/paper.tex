@@ -1,0 +1,170 @@
+\documentclass[a4paper]{article}
+
+\usepackage{xeCJK}
+\setCJKmainfont[BoldFont=SimHei]{SimSun}
+
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage[linesnumbered, ruled, vlined]{algorithm2e}
+\usepackage{array}
+
+\renewcommand{\baselinestretch}{1.5}
+
+\title{基于DBLP数据库的科研合作关系挖掘}
+\author{李屹(1501110045), 卢煜腾(?)}
+
+\begin{document}
+\maketitle
+
+\section{简介}
+\subsection{开发环境与运行依赖}
+我们的程序在python2.7版本下开发并在Ubuntu 14.04 LTS, Ubuntu 15.10中测试通过。
+由于使用了关系数据库引擎SQLite，因此运行需要依赖python中的sqlite3扩展，这个扩展可以通过\texttt{pip},
+\texttt{easy\_install}等工具进行安装。如不安装这个扩展，则整个程序无法运行。
+
+\section{数据的来源与数据库的构建}
+本文所使用的数据来源于DBLP论文数据库\footnote{http://dblp.org/search/index.php}. 根据
+作业要求，我们考虑了12个数据挖掘相关会议和4种相关期刊，每种会议（期刊）中选取不超过10000篇文章作为我
+们的样本。实际上，由于所考虑的会议与期刊所收录总论文数均未超出该上限，因此可以认为我们抓取了上述会议
+中的全部论文。
+
+我们通过DBLP所提供的RESTful API获取论文数据，由于挖掘目标较为简单，因此我们仅靠虑文章标题，作者，年
+份，期刊或会议名称等基本信息。从不同来源获得的论文数如下表所示：
+
+\begin{figure}[ht]
+  \centering
+  \begin{tabular}{lll}
+    \hline
+    期刊/会议 & 名称(DBLP代码) & 论文数 \\
+    \hline
+    会议 & sdm & 1161\\
+    会议 & icdm & 2274\\
+    会议 & ecml-pkdd & 689\\
+    会议 & pakdd & 1592\\
+    会议 & wsdm & 612\\
+    会议 & dmkd & 61\\
+    会议 & kdd & 2575\\
+    会议 & cvpr & 7049\\
+    会议 & icml & 3123\\
+    会议 & nips & 5599\\
+    会议 & colt & 1204\\
+    会议 & sigir & 3602\\
+    期刊 & pattern\_recognition\_pr & 7010\\
+    期刊 & sigkdd\_explorations\_sigkdd & 477\\
+    期刊 & tkdd & 226\\
+    期刊 & ieee\_trans\_knowl\_data\_eng\_tkde & 3101\\
+    \hline
+  \end{tabular}
+  \label{table:dataset}
+  \caption{本文所选取的期刊与会议列表}
+\end{figure}
+
+根据上述条件，我们通过json格式接口获得共40355篇论文的具体信息，并将它们整理保存在SQLite3格式的文本数
+据库中。SQLite3是一种十分流行的小型关系数据库，它可以单个普通文件的形式保存，因此在处理小规模数据集
+时具有方便部署的优势。同时python提供了sqlite的接口，我们的程序在运行时将通过SQL语句动态获取部分数据
+。数据抓取程序在\texttt{scripts/dbgenerate.py}中实现，数据默认存储在\texttt{dataset/default.sqlite}
+中。如果不需要重新获取数据则不需要再次运行这个脚本。
+
+在这次作业中，我们抓取的数据字段包括：标题，作者，年份，期刊或会议名称。
+
+\section{频繁项集挖掘算法与优化}
+
+\section{基于先验知识的合作关系分析}
+在本次作业的数据挖掘过程中，我们仅仅通过FP-Growth算法挖掘了频繁项集，而没有进行进一步的关系挖掘。之
+所以这样做，主要是考虑到各项之间的关系在时间上具有不一致性。举例来说，``如果一个人买了啤酒，那么他也
+有很大的概率会买尿布''这条性质将会在很长的一段时间内保持稳定，然而``如果教授A发表了一篇文章，那么这
+篇文章的合作者中很大几率会出现教授B''这种关系却随着时间不断变化。
+
+我们假设有研究人员A、B、C、D，两个人十年之前曾经紧密合作并发表了10篇论文，而之后分别又发表了90篇。而
+C与D均刚开始工作，两人共同合作发表了5篇论文，此外并没有单独发表任何文章。我们很难断言C与D的合作关系
+要比A与B的关系频繁，然而如果通过关系分析便很有可能得到这样的结论。
+
+基于这样的考虑，后续的合作关系分析主要基于对学术领域的先验知识。这部分中描述的所有算法均在
+\texttt{lib/analysis.py}中实现。
+
+\subsection{导师-学生指导关系和指 导时间}
+一般而言，一个比较典型的学生-导师的关系应当包括下述特征：
+\begin{enumerate}
+  \item 两人在一段时期内频繁合作发表文章
+  \item 这样的合作关系通常时间不短于一年
+  \item 导师与学生在学术领域的积累通常有较大的稳定差距
+  \item 一个导师通常指导多个学生
+\end{enumerate}
+
+在实际的算法中，我们通过下述的筛选过程来寻找导师-学生指导关系：首先选取FP-Growth中计算得到的所有频繁
+2项集, 并考察每个频繁项中的两个作者。如果这两个作者首次发表论文的时间差不小于某个阈值
+（本文中设定的阈值为8）\footnote{根据多位老师同学的意见，10年是一个更为合适的阈值，但是在特定情况下
+（老师开发表文章较晚而收学生较早）部分关系可能被错误地过滤掉。因此我们设定了较低的阈值并追加进行后续
+判断, 希望借此得到更加准确的结果}，且资历较老的研究人员发表论文数目明显较多（这里设定为超出5篇或以上
+）那么我们初步认为这是一对学生-导师的关系。
+
+接下来我们对这些关系按导师归类，如果归类后一个导师旗下有超过两名学生，那么认定这是一组合理的导师-学
+生指导关系。反之，则认为指导关系较弱，将其从指导关系中删除。通过上述的算法，我们挖掘到了较为可靠的导
+师-学生指导关系，具体结果将在下一章中详细描述。
+
+如果仅靠虑国内高校或研究机构的成果，其实可以考虑作者的顺序。通常而言导师署名排在最末并注明为通讯作者
+，而学生往往排在第一作者的位置。然而在国外，许多研究人员倾向使用字母序，因此这种方法我们并未采用。
+
+\subsection{频繁合作关系与合作团队}
+\begin{figure}[ht]
+  \begin{center}
+    \begin{tabular}{m{12cm}r}
+      \hline
+      团队成员 & 合作指数 \\
+      \hline
+      Shiguang Shan, Ruiping Wang, Xilin Chen, Zhiwu Huang & 12 \\
+      Dinh Q. Phung, Svetha Venkatesh, Sunil Kumar Gupta, Duc-Son Pham, Budhaditya Saha, Santu Rana
+      & 16 \\
+      Huan Liu, Jiliang Tang, Xia Hu, Huiji Gao & 10 \\
+      Shinjae Yoo, Hong Qin, Dantong Yu, Hao Huang & 12 \\
+      Sethuraman Panchanathan, Wei Fan, Ian Davidson, Jieping Ye & 10 \\
+      Jing Gao, Kang Li, Nan Du, Aidong Zhang & 8 \\
+      Jiafeng Guo, Shuzi Niu, Yanyan Lan, Xueqi Cheng & 8 \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{频繁合作的团队}
+\end{figure}
+
+\section{关系验证}
+根据作业要求，我们对挖掘出来的导师-学生指导关系进行了人工验证。在此处我们所定义的导师-学生
+指导关系包括：Master, PhD, PostDoc以及其他合作指导关系（由学生在页面上明确说明的）。
+
+\begin{figure}[ht]
+  \begin{center}
+    \begin{tabular}{lm{9cm}l}
+      \hline
+      导师 & 学生 & 准确率 \\
+      \hline
+      Ron Kohavi & Toby Walker , Ya Xu  & 0\%\\
+      Nicolò Cesa-Bianchi & Fabio Vitale , Giovanni Zappella  & 100\%\\
+      Maarten de Rijke & Wouter Weerkamp , Ilya Markov  & 100\%\\
+      Shiguang Shan & Zhiwu Huang , Ruiping Wang  & 100\%\\
+      Claudio Gentile & Fabio Vitale , Giovanni Zappella  & 100\%\\
+      Michael I. Jordan & Fabian L. Wauthier , Martin J. Wainwright  & 100\% \\
+      Huan Liu & Xia Hu , Huiji Gao  & 100\%\\
+      Christos Faloutsos & Partha Pratim Talukdar , Shiqiang Yang , Alex Beutel , Meng Jiang , Nicholas D.
+      Sidiropoulos  & 20\%\\
+      Philip S. Yu & Philippe Fournier-Viger , Chang-Dong Wang , Bo Liu , Cheng-Wei Wu , Zhifeng Hao ,
+      Chaokun Wang , Bokai Cao , Jun Zhang , Hong-Han Shuai , Yanshan Xiao  & 0\%\\
+      Xingquan Zhu & Shirui Pan , Li Guo , Jia Wu  & \\
+      Jiawei Han & Latifur Khan , Xiang Ren , Deng Cai , Xifeng Yan , Jing Gao , Mohammad M. Masud , Xiao
+      Yu  & 57.14\%\\
+      Wei Fan & ErHeng Zhong , Sethuraman Panchanathan  & 50\%\\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{导师-学生指导关系的准确率}
+\end{figure}
+
+经过人工核验，我们找出的大多数师生关系均正确，其中准确率较低的各关系也能够得到解释：
+\begin{description}
+  \item[Ron Kohavi] 是
+    微软研究院的一名研究人员。由于微软研究院给出的页面上并不包括学生信息，因此我们猜想他的``学生''实
+    际上应当是研究院中Mentor与实习生或者下属的关系，但是这一层无法得到验证。
+  \item[Jiawei Han] 与\textbb{Philip S. Yu}, \textbb{Christos Faloutsos}等人，由于在业界工作时间过长
+    ，已经与很多人建立了疑似指导但并非名义师生的关系，这会造成误判。
+\end{description}
+
+\section{小结与分工}
+
+\end{document}

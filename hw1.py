@@ -41,6 +41,14 @@ else:
             print '[%s]' % key
             for line in result[key]:
                 print '  ', line
+
+        for key in result:
+            print '%s &' % key,
+            for line in result[key]:
+                print line[0],
+                if result[key].index(line) < len(result[key]) - 1:
+                    print ',',
+            print ' & \\\\'
     elif isinstance(result, list):
         for line in result:
             print line

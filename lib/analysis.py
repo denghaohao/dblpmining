@@ -50,10 +50,10 @@ def teacher_student_analyse(itemset):
         # and the former has a larger number of publications, we will take this
         # as a teacher-student relation
         if authors[author1][0] - authors[author2][0] >= year_threshold:
-            if authors[author1][1] <= authors[author2][1]:
+            if authors[author1][1] + 5 <= authors[author2][1]:
                 raw_relation.append((author1, author2, edge[1]))
         elif authors[author2][0] - authors[author1][0] >= year_threshold:
-            if authors[author2][1] <= authors[author1][1]:
+            if authors[author2][1] + 5<= authors[author1][1]:
                 raw_relation.append((author2, author1, edge[1]))
 
     # now we're going to check when the student is supervised by his supervisor
@@ -79,7 +79,7 @@ def teacher_student_analyse(itemset):
 
 
 def group_cooperate_relation(itemset):
-    itemset = filter(lambda item: len(item[0]) >= 3 and item[1] >= 3, itemset)
+    itemset = filter(lambda item: len(item[0]) >= 3 and item[1] >= 4, itemset)
     flag = True
     while flag:
         flag = False
