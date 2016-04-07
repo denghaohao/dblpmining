@@ -3,9 +3,9 @@ from lib.analysis import *
 import sys
 
 # debug, this should be removed when this project is released
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        sys.argv.append('3')
+# if __name__ == "__main__":
+#     if len(sys.argv) < 2:
+#         sys.argv.append('3')
 
 # to make sure which database we're using
 if len(sys.argv) <= 1:
@@ -27,9 +27,20 @@ else:
     # generating frequent item set
     terms = tree.growth()
 
+    result = []
     if sys.argv[1] == '1':
-        print sorted(cooperate_relation(terms), key=lambda edge: edge[1], reverse=True)
+        result = sorted(cooperate_relation(terms), key=lambda edge: edge[1], reverse=True)
     elif sys.argv[1] == '2':
-        print teacher_student_analyse(terms)
+        result = teacher_student_analyse(terms)
     elif sys.argv[1] == '3':
-        print group_cooperate_relation(terms)
+        result = group_cooperate_relation(terms)
+
+    print 'program finished with %d patterns found:' % len(result)
+    if isinstance(result, dict):
+        for key in result:
+            print '[%s]' % key
+            for line in result[key]:
+                print '  ', line
+    elif isinstance(result, list):
+        for line in result:
+            print line

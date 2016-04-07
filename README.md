@@ -2,6 +2,8 @@
 
 homework of datamining
 
+**IMPORTANT** every time you update the database via `script/dbgenerate.py`, the `script/dbprepare.py` should follow
+
 # File Structure
 - `dataset` *all the databases should be stored in this folder, formatted as sqlite3*
 - `scripts`

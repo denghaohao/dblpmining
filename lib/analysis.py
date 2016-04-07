@@ -79,6 +79,17 @@ def teacher_student_analyse(itemset):
 
 
 def group_cooperate_relation(itemset):
-    itemset = filter(lambda item: len(item[0]) >= 3 and item[1] >= 0, itemset)
+    itemset = filter(lambda item: len(item[0]) >= 3 and item[1] >= 3, itemset)
+    flag = True
+    while flag:
+        flag = False
+        for i in range(len(itemset)):
+            for j in range(i + 1, len(itemset)):
+                if len(set(itemset[i][0]) & set(itemset[j][0])) >= 2:
+                    itemset[i][0] = list(set(itemset[i][0]) | set(itemset[j][0]))
+                    itemset[i][1] += itemset[j][1]
+                    del itemset[j]
+                    flag = True
+                    break
 
-    print itemset
+    return itemset
