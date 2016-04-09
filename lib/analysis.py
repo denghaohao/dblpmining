@@ -12,7 +12,7 @@ def obtain_papers(names, distinct=True):
     return query(
         # %% is an escape character for %
         dbname,
-        'select %s year from dblp where %s 1' % ('distinct' if distinct else '', whereclause)
+        'select %s year from dblp where %s 1 order by year' % ('distinct' if distinct else '', whereclause)
     )
 
 
@@ -32,8 +32,9 @@ def cooperate_relation(itemset):
     for edge in raw_edges:
         # evaluation for each edge (frequent item)
         copapers = obtain_papers([edge[0][0], edge[0][1]], distinct=False)
+        year_range = copapers[-1][0] - copapers[0][0] + 1
         edge[1] = (float(len(copapers)) / authors[edge[0][0]][1]) * \
-                  (float(len(copapers)) / authors[edge[0][1]][1]) * len(copapers)
+                  (float(len(copapers)) / authors[edge[0][1]][1]) * len(copapers) / year_range
 
     return raw_edges
 

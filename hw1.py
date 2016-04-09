@@ -35,7 +35,6 @@ else:
     elif sys.argv[1] == '3':
         result = group_cooperate_relation(terms)
 
-    print 'program finished with %d patterns found:' % len(result)
     if isinstance(result, dict):
         for key in result:
             print '[%s]' % key
@@ -52,3 +51,5 @@ else:
     elif isinstance(result, list):
         for line in result:
             print line
+
+    print 'program finished with %d patterns found' % len(result)
