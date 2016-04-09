@@ -15,7 +15,7 @@
 \begin{document}
 \maketitle
 
-\section{简介}
+\section{简介} 
 \subsection{开发环境与运行依赖}
 我们的程序在python2.7版本下开发并在Ubuntu 14.04 LTS, Ubuntu 15.10中测试通过。
 由于使用了关系数据库引擎SQLite，因此运行需要依赖python中的sqlite3扩展，这个扩展可以通过\texttt{pip},
@@ -24,6 +24,20 @@
 获取数据的过程依赖urllib库来发起HTTP请求。如果不需要重新获取数据，那么无需这个库也可运行主程序。
 
 \subsection{运行与测试方法}
+在所有依赖库均已安装完成的情况下，在根目录中直接运行相应的python脚本就可以看到结果，如：
+\begin{verbatim}
+  # 获取数据库并保存到默认位置（这两步可以不做）
+  python scripts/dbgenerate.py
+  python scripts/dbprepare.py
+
+  # 计算合作关系的权值
+  python hw1.py 1
+  # 挖掘师生关系与指导时间
+  python hw1.py 2
+  # 挖掘频繁合作团队
+  pythonw hw1.py 3
+\end{verbatim}
+程序运行的结果见paper/result.txt。
 
 \section{数据的来源与数据库的构建}
 本文所使用的数据来源于DBLP论文数据库\footnote{http://dblp.org/search/index.php}. 根据
@@ -76,9 +90,24 @@ lib/fptree.py中我们描述了FP-Tree的结构以及FP-Tree的构造算法，�
 FP-Growth算法。
 
 由于FP-Growth算法递归地构造规模更小的条件FP-Tree，而递归挖掘子树的过程实际上互相之间不存在依赖关系。
-因此我们用python中提供的多线程库threading对FP-Tree算法进行了并行化，并行化后计算的效率如下图所示：
+因此我们用python中提供的多线程库threading对FP-Tree算法进行了并行化。不过由于数据量较小，大量的时间耗
+费在FP-Tree的构建过程中，因此并未有明显的时间优势。
 
-\section{基于先验知识的合作关系分析}
+我们所实现的算法在解决作业中三个问题时的时间消耗如下：
+\begin{figure}[ht]
+  \begin{center}
+    \begin{tabular}{llll}
+      \hline
+      & 计算合作关系的权值 & 导师-学生指导关系挖掘 & 合作团队挖掘 \\
+      \hline
+      时间消耗(秒) & 7.06 & 3.95 & 3.62 \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{时间消耗}
+\end{figure}
+
+\section{基于先验知识的合作关系分析} 
 在本次作业的数据挖掘过程中，我们仅仅通过FP-Growth算法挖掘了频繁项集，而没有进行进一步的关系挖掘。之
 所以这样做，主要是考虑到各项之间的关系在时间上具有不一致性。举例来说，``如果一个人买了啤酒，那么他也
 有很大的概率会买尿布''这条性质将会在很长的一段时间内保持稳定，然而``如果教授A发表了一篇文章，那么这
@@ -108,7 +137,7 @@ rel_{A,B}=P(B|A)\times P(A|B)\times \frac{(A\cup B).sup}{(A\cup B).scope}
 其中，$(A\cup B).sup$和$(A\cup B).scope$分别表示A,B共同合作的文章数目以及这些文章发表时间的范围（最
 晚年份于最早年份之差）。
 
-\subsection{导师-学生指导关系和指 导时间}
+\subsection{导师-学生指导关系和指导时间}
 一般而言，一个比较典型的学生-导师的关系应当包括下述特征：
 \begin{enumerate}
   \item 两人在一段时期内频繁合作发表文章
@@ -172,11 +201,16 @@ rel_{A,B}=P(B|A)\times P(A|B)\times \frac{(A\cup B).sup}{(A\cup B).scope}
 \end{figure}
 
 其中合作指数可以看做是团队紧密度的权值，它的计算规则是：
+\begin{enumerate}
+  \item 当一个团队是初次被挖掘出的核心团队时，权值即为它对应的频繁项支持度
+  \item 当两个团队被合并时，其权值会相加
+\end{enumerate}
 
-\section{关系验证}
+\section{关系验证} 
 根据作业要求，我们对挖掘出来的导师-学生指导关系进行了人工验证。在此处我们所定义的导师-学生
 指导关系包括：Master, PhD,
-PostDoc以及其他合作指导关系（由学生在页面上明确说明的）。验证结果见图\ref{supervising}。
+PostDoc以及其他合作指导关系（由学生在页面上明确说明的）。基于这种定义，我们的挖掘算法所给出的指导关
+系结果相对准确，其验证结果见图\ref{supervising}。
 
 \begin{figure}[ht]
   \begin{center}
@@ -206,7 +240,7 @@ PostDoc以及其他合作指导关系（由学生在页面上明确说明的）�
   \label{supervising}
 \end{figure}
 
-经过人工核验，我们找出的大多数师生关系均正确，其中准确率较低的各关系也能够得到解释：
+经过人工核验，我们找出的大多数师生关系均是事实存在的关系，其中准确率较低的各关系也能够得到解释：
 \begin{description}
   \item[Ron Kohavi] 是
     微软研究院的一名研究人员。由于微软研究院给出的页面上并不包括学生信息，因此我们猜想他的``学生''实
@@ -215,6 +249,15 @@ PostDoc以及其他合作指导关系（由学生在页面上明确说明的）�
     ，已经与很多人建立了疑似指导但并非名义师生的关系，这会造成误判。
 \end{description}
 
-\section{小结与分工}
+由于我们所定义的导师-学生指导关系约束较强，因此事实存在的许多导师与学生无法被算法找到。这是我们挖
+掘算法的一个显著弊端。
+
+\section{分工}
+\noindent 我们小组的分工如下所示:
+\begin{description}
+  \item[李屹] 数据库获取与预处理，FP-Tree算法的实现，及报告相关部分
+  \item[卢煜腾] FP-Growth算法的实现与优化及报告相关部分
+\end{description}
+基于先验知识的挖掘策略由小组讨论完成。
 
 \end{document}

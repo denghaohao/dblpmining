@@ -13,7 +13,8 @@ if len(sys.argv) <= 1:
     print '- 1: cooperative relationship'
     print '- 2: supervising relationship'
     print '- 3: multiple cooperative relationship'
-    print 'you can also specify a certain database by the second parament, e.g.'
+    print 'for example, python hw1.py 3'
+    print 'you can also specify a certain database by the second parameter, e.g.'
     print '`python hw1.py 1 default`'
 else:
     set_db('default' if len(sys.argv) <= 2 else sys.argv[2])
