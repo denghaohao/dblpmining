@@ -21,6 +21,10 @@
 由于使用了关系数据库引擎SQLite，因此运行需要依赖python中的sqlite3扩展，这个扩展可以通过\texttt{pip},
 \texttt{easy\_install}等工具进行安装。如不安装这个扩展，则整个程序无法运行。
 
+获取数据的过程依赖urllib库来发起HTTP请求。如果不需要重新获取数据，那么无需这个库也可运行主程序。
+
+\subsection{运行与测试方法}
+
 \section{数据的来源与数据库的构建}
 本文所使用的数据来源于DBLP论文数据库\footnote{http://dblp.org/search/index.php}. 根据
 作业要求，我们考虑了12个数据挖掘相关会议和4种相关期刊，每种会议（期刊）中选取不超过10000篇文章作为我
@@ -67,6 +71,12 @@
 在这次作业中，我们抓取的数据字段包括：标题，作者，年份，期刊或会议名称。
 
 \section{频繁项集挖掘算法与优化}
+由于Apriori算法的效率较低，我们在挖掘频繁项时使用了fp-growth算法。算法的过程在此不做详述。在
+lib/fptree.py中我们描述了FP-Tree的结构以及FP-Tree的构造算法，而在lib/fpgrowth.py中我们描述了
+FP-Growth算法。
+
+由于FP-Growth算法递归地构造规模更小的条件FP-Tree，而递归挖掘子树的过程实际上互相之间不存在依赖关系。
+因此我们用python中提供的多线程库threading对FP-Tree算法进行了并行化，并行化后计算的效率如下图所示：
 
 \section{基于先验知识的合作关系分析}
 在本次作业的数据挖掘过程中，我们仅仅通过FP-Growth算法挖掘了频繁项集，而没有进行进一步的关系挖掘。之
@@ -165,7 +175,8 @@ rel_{A,B}=P(B|A)\times P(A|B)\times \frac{(A\cup B).sup}{(A\cup B).scope}
 
 \section{关系验证}
 根据作业要求，我们对挖掘出来的导师-学生指导关系进行了人工验证。在此处我们所定义的导师-学生
-指导关系包括：Master, PhD, PostDoc以及其他合作指导关系（由学生在页面上明确说明的）。
+指导关系包括：Master, PhD,
+PostDoc以及其他合作指导关系（由学生在页面上明确说明的）。验证结果见图\ref{supervising}。
 
 \begin{figure}[ht]
   \begin{center}
@@ -192,6 +203,7 @@ rel_{A,B}=P(B|A)\times P(A|B)\times \frac{(A\cup B).sup}{(A\cup B).scope}
     \end{tabular}
   \end{center}
   \caption{导师-学生指导关系的准确率}
+  \label{supervising}
 \end{figure}
 
 经过人工核验，我们找出的大多数师生关系均正确，其中准确率较低的各关系也能够得到解释：
